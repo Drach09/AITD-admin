@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
