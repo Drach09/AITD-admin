@@ -66,6 +66,10 @@ export function SpecializationsSection() {
             <label className="text-sm font-medium">Name</label>
             <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="Specialization name" />
           </div>
+          <div className="space-y-1.5 max-w-sm">
+            <label className="text-sm font-medium">Description</label>
+            <Textarea value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} placeholder="Specialization description" />
+          </div>
           <ImageUpload value={editing.image} onChange={(img) => setEditing({ ...editing, image: img })} />
           <Button onClick={save}>Save</Button>
         </div>
