@@ -9,6 +9,7 @@ import { toast } from "sonner";
 interface Specialization {
   id: string;
   name: string;
+  description: string;
   image: string | null;
 }
 
