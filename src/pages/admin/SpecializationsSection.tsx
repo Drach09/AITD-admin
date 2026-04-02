@@ -20,7 +20,7 @@ export function SpecializationsSection() {
   const [isNew, setIsNew] = useState(false);
 
   const openNew = () => {
-    setEditing({ id: crypto.randomUUID(), name: "", image: null });
+    setEditing({ id: crypto.randomUUID(), name: "", description: "", image: null });
     setIsNew(true);
   };
 
