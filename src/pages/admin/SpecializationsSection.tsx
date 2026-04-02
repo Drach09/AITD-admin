@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 interface Specialization {
   id: string;
   name: string;
+  description: string;
   image: string | null;
 }
 
@@ -18,7 +20,7 @@ export function SpecializationsSection() {
   const [isNew, setIsNew] = useState(false);
 
   const openNew = () => {
-    setEditing({ id: crypto.randomUUID(), name: "", image: null });
+    setEditing({ id: crypto.randomUUID(), name: "", description: "", image: null });
     setIsNew(true);
   };
 
@@ -63,6 +65,10 @@ export function SpecializationsSection() {
           <div className="space-y-1.5 max-w-sm">
             <label className="text-sm font-medium">Name</label>
             <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="Specialization name" />
+          </div>
+          <div className="space-y-1.5 max-w-sm">
+            <label className="text-sm font-medium">Description</label>
+            <Textarea value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} placeholder="Specialization description" />
           </div>
           <ImageUpload value={editing.image} onChange={(img) => setEditing({ ...editing, image: img })} />
           <Button onClick={save}>Save</Button>
