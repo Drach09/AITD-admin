@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus, Save, Eye } from "lucide-react";
+import { Calendar, Plus, Save, Eye, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface EventItem {
@@ -23,6 +23,7 @@ export function EventsSection() {
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
   const [image, setImage] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
   const [items, setItems] = useState<EventItem[]>([
     {
       id: "evt-1",
@@ -63,6 +64,7 @@ export function EventsSection() {
     setDate("");
     setLocation("");
     setImage(null);
+    setShowForm(false);
     toast.success("Event saved successfully!");
   };
 
@@ -77,77 +79,101 @@ export function EventsSection() {
         description="Create and manage events displayed on your homepage"
         icon={<Calendar className="h-5 w-5" />}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                Event Title <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter event title"
-                className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Event Date</label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Location</label>
-              <Input
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Event location"
-                className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                Description <span className="text-red-500">*</span>
-              </label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the event in detail"
-                rows={6}
-                className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 resize-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Event Image</label>
-            <ImageUpload value={image} onChange={setImage} />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-          <Button
-            onClick={handleSave}
-            className="bg-gradient-to-r from-brand-navy to-brand-indigo hover:from-brand-indigo hover:to-brand-sky text-white shadow-md"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save Event
-          </Button>
-          <Button variant="outline" onClick={handlePreview} className="border-brand-sky/50 hover:bg-brand-sky/10 text-brand-navy">
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
+        <div className="flex flex-wrap gap-3 items-center">
+          <Button onClick={() => setShowForm(true)} className="gap-1.5">
+            <Plus className="h-4 w-4" /> Add Event
           </Button>
         </div>
+
+        {showForm && (
+          <div className="bg-muted/50 rounded-lg p-4 mt-4 border border-border">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-semibold">New Event</span>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="text-slate-500 hover:text-slate-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    Event Title <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter event title"
+                    className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Event Date</label>
+                  <Input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Location</label>
+                  <Input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Event location"
+                    className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    Description <span className="text-red-500">*</span>
+                  </label>
+                  <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe the event in detail"
+                    rows={6}
+                    className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 resize-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Event Image</label>
+                <ImageUpload value={image} onChange={setImage} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+              <Button
+                onClick={handleSave}
+                className="bg-gradient-to-r from-brand-navy to-brand-indigo hover:from-brand-indigo hover:to-brand-sky text-white shadow-md"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Event
+              </Button>
+              <Button variant="outline" onClick={handlePreview} className="border-brand-sky/50 hover:bg-brand-sky/10 text-brand-navy">
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+              <Button variant="outline" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </SectionCard>
 
       {/* Recent Events */}

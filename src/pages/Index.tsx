@@ -1,21 +1,31 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { MobileNav } from "@/components/admin/MobileNav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { EventsSection } from "@/pages/admin/EventsSection";
 import { PlacementsSection } from "@/pages/admin/PlacementsSection";
 import { LatestNewsSection } from "@/pages/admin/LatestNewsSection";
 import { TestimonialsSection } from "@/pages/admin/TestimonialsSection";
+import { FacultySection } from "@/pages/admin/FacultySection";
 
 const sectionTitles: Record<string, string> = {
   events: "Events",
   placements: "Placements",
   "latest-news": "Latest News",
   testimonials: "Testimonials",
+  faculty: "Faculty",
 };
 
 const Index = () => {
   const [active, setActive] = useState("events");
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("aitd-admin-authenticated");
+    navigate("/", { replace: true });
+  };
 
   const renderSection = () => {
     switch (active) {
@@ -23,6 +33,7 @@ const Index = () => {
       case "placements": return <PlacementsSection />;
       case "latest-news": return <LatestNewsSection />;
       case "testimonials": return <TestimonialsSection />;
+      case "faculty": return <FacultySection />;
       default: return <EventsSection />;
     }
   };
@@ -45,6 +56,9 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
               A
             </div>

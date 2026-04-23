@@ -1,10 +1,11 @@
-import { Calendar, Image, MessageSquare, BarChart3, Settings, LogOut, Newspaper } from "lucide-react";
+import { Calendar, Image, MessageSquare, BarChart3, Settings, LogOut, Newspaper, User } from "lucide-react";
 
 const navItems = [
   { id: "events", label: "Events", icon: Calendar },
   { id: "placements", label: "Placements", icon: Image },
   { id: "latest-news", label: "Latest News", icon: Newspaper },
   { id: "testimonials", label: "Testimonials", icon: MessageSquare },
+  { id: "faculty", label: "Faculty", icon: User },
 ];
 
 interface AdminSidebarProps {
