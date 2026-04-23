@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ interface Testimonial {
   id: string;
   name: string;
   text: string;
+  image?: string | null;
 }
 
 export function TestimonialsSection() {
@@ -18,7 +20,7 @@ export function TestimonialsSection() {
   const [isNew, setIsNew] = useState(false);
 
   const openNew = () => {
-    setEditing({ id: crypto.randomUUID(), name: "", text: "" });
+    setEditing({ id: crypto.randomUUID(), name: "", text: "", image: null });
     setIsNew(true);
   };
 
@@ -68,6 +70,9 @@ export function TestimonialsSection() {
             <label className="text-sm font-medium">Testimonial</label>
             <Textarea value={editing.text} onChange={(e) => setEditing({ ...editing, text: e.target.value })} placeholder="What the student said..." rows={3} />
           </div>
+          <div className="space-y-1.5">
+            <ImageUpload value={editing.image ?? null} onChange={(url) => setEditing({ ...editing, image: url })} label="Student Image" />
+          </div>
           <Button onClick={save}>Save</Button>
         </div>
       )}
@@ -76,6 +81,9 @@ export function TestimonialsSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {items.map((item) => (
             <div key={item.id} className="bg-background border border-border rounded-lg p-4 shadow-card hover:shadow-card-hover transition-shadow">
+              {item.image && (
+                <img src={item.image} alt={item.name} className="w-full h-48 object-cover rounded-lg mb-4" />
+              )}
               <Quote className="h-5 w-5 text-brand-orange mb-2" />
               <p className="text-sm text-foreground leading-relaxed mb-3">"{item.text}"</p>
               <div className="flex items-center justify-between">

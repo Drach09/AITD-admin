@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 interface ImageUploadProps {
   value?: string | null;
-  onChange: (url: string | null) => void;
+  onChange: (url: string | null, file?: File) => void;
   label?: string;
 }
 
@@ -15,7 +15,7 @@ export function ImageUpload({ value, onChange, label = "Upload Image" }: ImageUp
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      onChange(url);
+      onChange(url, file);
     }
   };
 

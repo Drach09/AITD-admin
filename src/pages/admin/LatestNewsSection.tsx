@@ -1,0 +1,142 @@
+import { useState } from "react";
+import { SectionCard } from "@/components/admin/SectionCard";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Newspaper, Pencil, Trash2, Plus, X } from "lucide-react";
+import { toast } from "sonner";
+
+interface NewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  link: string;
+}
+
+export function LatestNewsSection() {
+  const [items, setItems] = useState<NewsItem[]>([]);
+  const [editing, setEditing] = useState<NewsItem | null>(null);
+  const [isNew, setIsNew] = useState(false);
+
+  const openNew = () => {
+    setEditing({ id: crypto.randomUUID(), title: "", summary: "", link: "" });
+    setIsNew(true);
+  };
+
+  const openEdit = (item: NewsItem) => {
+    setEditing({ ...item });
+    setIsNew(false);
+  };
+
+  const save = () => {
+    if (!editing || !editing.title.trim() || !editing.summary.trim()) {
+      toast.error("Title and summary are required");
+      return;
+    }
+
+    if (isNew) {
+      setItems([...items, editing]);
+    } else {
+      setItems(items.map((item) => (item.id === editing.id ? editing : item)));
+    }
+
+    setEditing(null);
+    toast.success(isNew ? "News item added!" : "News item updated!");
+  };
+
+  const remove = (id: string) => {
+    setItems(items.filter((item) => item.id !== id));
+    toast.success("News item deleted");
+  };
+
+  return (
+    <SectionCard
+      title="Latest News"
+      description="Add, edit, and remove the latest news items shown on the site"
+      icon={<Newspaper className="h-5 w-5" />}
+    >
+      <Button onClick={openNew} className="gap-1.5">
+        <Plus className="h-4 w-4" /> Add News Item
+      </Button>
+
+      {editing && (
+        <div className="bg-muted/50 rounded-lg p-4 space-y-4 border border-border">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">{isNew ? "New" : "Edit"} News Item</span>
+            <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="space-y-1.5 max-w-lg">
+            <label className="text-sm font-medium">Title</label>
+            <Input
+              value={editing.title}
+              onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+              placeholder="News title"
+            />
+          </div>
+
+          <div className="space-y-1.5 max-w-lg">
+            <label className="text-sm font-medium">Summary</label>
+            <Textarea
+              value={editing.summary}
+              onChange={(e) => setEditing({ ...editing, summary: e.target.value })}
+              placeholder="Short summary of the news"
+              rows={4}
+            />
+          </div>
+
+          <div className="space-y-1.5 max-w-lg">
+            <label className="text-sm font-medium">Link (optional)</label>
+            <Input
+              value={editing.link}
+              onChange={(e) => setEditing({ ...editing, link: e.target.value })}
+              placeholder="https://example.com"
+              type="url"
+            />
+          </div>
+
+          <Button onClick={save}>Save</Button>
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <div className="grid grid-cols-1 gap-4">
+          {items.map((item) => (
+            <div key={item.id} className="bg-background border border-border rounded-lg p-4 shadow-card hover:shadow-card-hover transition-shadow">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  {item.link ? (
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-lg font-semibold text-foreground hover:text-blue-600 transition-colors"
+                    >
+                      {item.title}
+                    </a>
+                  ) : (
+                    <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
+                  )}
+                  <p className="text-sm text-slate-600 mt-2">{item.summary}</p>
+                  {item.link && (
+                    <p className="text-xs text-blue-500 mt-1 truncate">{item.link}</p>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => openEdit(item)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => remove(item.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}

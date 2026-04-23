@@ -1,5 +1,3 @@
-import type { Config } from "tailwindcss";
-
 export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
@@ -50,10 +48,14 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         brand: {
-          orange: "hsl(var(--brand-orange))",
-          purple: "hsl(var(--brand-purple))",
-          blue: "hsl(var(--brand-light-blue))",
-          red: "hsl(var(--brand-red))",
+          navy: "#000b61",
+          sky: "#459ee7",
+          amber: "#ffa52c",
+          maroon: "#a11834",
+          indigo: "#4040dd",
+          graphite: "#6e7276",
+          black: "#000000",
+          white: "#ffffff",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
