@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Newspaper, Pencil, Trash2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import { getSection, saveSection } from "@/lib/api";
 
 interface NewsItem {
   id: string;
@@ -17,6 +18,51 @@ export function LatestNewsSection() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [editing, setEditing] = useState<NewsItem | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getSection("latest-news")
+      .then((content) =>
+        setItems(
+          content.map((item) => ({
+            id: item.id,
+            title: item.title || "",
+            summary: item.description || "",
+            link: String(item.meta?.link || ""),
+          }))
+        )
+      )
+      .catch(() => toast.error("Unable to load latest news."));
+  }, []);
+
+  const persist = async (nextItems: NewsItem[]) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const saved = await saveSection(
+        "latest-news",
+        nextItems.map((item, index) => ({
+          id: item.id,
+          title: item.title,
+          description: item.summary,
+          sortOrder: index,
+          meta: { link: item.link },
+        }))
+      );
+      setItems(
+        saved.map((item) => ({
+          id: item.id,
+          title: item.title || "",
+          summary: item.description || "",
+          link: String(item.meta?.link || ""),
+        }))
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save latest news.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const openNew = () => {
     setEditing({ id: crypto.randomUUID(), title: "", summary: "", link: "" });
@@ -35,9 +81,13 @@ export function LatestNewsSection() {
     }
 
     if (isNew) {
-      setItems([...items, editing]);
+      const nextItems = [...items, editing];
+      setItems(nextItems);
+      void persist(nextItems);
     } else {
-      setItems(items.map((item) => (item.id === editing.id ? editing : item)));
+      const nextItems = items.map((item) => (item.id === editing.id ? editing : item));
+      setItems(nextItems);
+      void persist(nextItems);
     }
 
     setEditing(null);
@@ -45,7 +95,9 @@ export function LatestNewsSection() {
   };
 
   const remove = (id: string) => {
-    setItems(items.filter((item) => item.id !== id));
+    const nextItems = items.filter((item) => item.id !== id);
+    setItems(nextItems);
+    void persist(nextItems);
     toast.success("News item deleted");
   };
 

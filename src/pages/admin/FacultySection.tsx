@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { User, Pencil, Trash2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import { getSection, saveSection, uploadImage } from "@/lib/api";
 
 interface FacultyItem {
   id: string;
@@ -13,12 +14,78 @@ interface FacultyItem {
   department: string;
   experience: string;
   image?: string | null;
+  imagePublicId?: string | null;
+  file?: File;
 }
 
 export function FacultySection() {
   const [items, setItems] = useState<FacultyItem[]>([]);
   const [editing, setEditing] = useState<FacultyItem | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getSection("faculty")
+      .then((content) =>
+        setItems(
+          content.map((item) => ({
+            id: item.id,
+            name: item.title || "",
+            title: item.subtitle || "",
+            department: String(item.meta?.department || ""),
+            experience: String(item.meta?.experience || ""),
+            image: item.imageUrl || null,
+            imagePublicId: item.imagePublicId || null,
+          }))
+        )
+      )
+      .catch(() => toast.error("Unable to load faculty data."));
+  }, []);
+
+  const persist = async (nextItems: FacultyItem[]) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const uploaded = await Promise.all(
+        nextItems.map(async (item) => {
+          if (!item.file) return item;
+          const media = await uploadImage(item.file);
+          return { ...item, image: media.url, imagePublicId: media.publicId, file: undefined };
+        })
+      );
+      const saved = await saveSection(
+        "faculty",
+        uploaded.map((item, index) => ({
+          id: item.id,
+          title: item.name,
+          subtitle: item.title,
+          description: "",
+          imageUrl: item.image || null,
+          imagePublicId: item.imagePublicId || null,
+          sortOrder: index,
+          meta: {
+            department: item.department,
+            experience: item.experience,
+          },
+        }))
+      );
+      setItems(
+        saved.map((item) => ({
+          id: item.id,
+          name: item.title || "",
+          title: item.subtitle || "",
+          department: String(item.meta?.department || ""),
+          experience: String(item.meta?.experience || ""),
+          image: item.imageUrl || null,
+          imagePublicId: item.imagePublicId || null,
+        }))
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save faculty.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const openNew = () => {
     setEditing({ id: crypto.randomUUID(), name: "", title: "", department: "", experience: "", image: null });
@@ -36,16 +103,15 @@ export function FacultySection() {
       return;
     }
 
-    if (isNaN(Number(editing.experience)) || Number(editing.experience) < 0) {
-      toast.error("Experience must be a valid number.");
-      return;
-    }
-
     if (isNew) {
-      setItems([...items, editing]);
+      const nextItems = [...items, editing];
+      setItems(nextItems);
+      void persist(nextItems);
       toast.success("Faculty member added!");
     } else {
-      setItems(items.map((item) => (item.id === editing.id ? editing : item)));
+      const nextItems = items.map((item) => (item.id === editing.id ? editing : item));
+      setItems(nextItems);
+      void persist(nextItems);
       toast.success("Faculty member updated!");
     }
 
@@ -53,7 +119,9 @@ export function FacultySection() {
   };
 
   const remove = (id: string) => {
-    setItems(items.filter((item) => item.id !== id));
+    const nextItems = items.filter((item) => item.id !== id);
+    setItems(nextItems);
+    void persist(nextItems);
     toast.success("Faculty member deleted");
   };
 
@@ -116,7 +184,7 @@ export function FacultySection() {
             <div className="lg:col-span-2">
               <ImageUpload
                 value={editing.image ?? null}
-                onChange={(url) => setEditing({ ...editing, image: url })}
+                onChange={(url, file) => setEditing({ ...editing, image: url, file })}
                 label="Faculty Photo"
               />
             </div>
@@ -150,7 +218,7 @@ export function FacultySection() {
                 <p className="text-sm text-slate-500">{item.department || "Department not set"}</p>
                 <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600 flex items-center justify-between">
                   <span>Experience</span>
-                  <span className="font-semibold">{item.experience} years</span>
+                  <span className="font-semibold">{item.experience}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" className="flex-1" onClick={() => openEdit(item)}>

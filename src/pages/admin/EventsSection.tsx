@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Plus, Save, Eye, X } from "lucide-react";
 import { toast } from "sonner";
+import { getSection, saveSection, uploadImage } from "@/lib/api";
 
 interface EventItem {
   id: string;
@@ -15,6 +16,8 @@ interface EventItem {
   date: string;
   location: string;
   image?: string | null;
+  imagePublicId?: string | null;
+  file?: File;
 }
 
 export function EventsSection() {
@@ -23,27 +26,84 @@ export function EventsSection() {
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
   const [image, setImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | undefined>(undefined);
   const [showForm, setShowForm] = useState(false);
-  const [items, setItems] = useState<EventItem[]>([
-    {
-      id: "evt-1",
-      title: "Tech Innovation Summit 2024",
-      description: "Join industry leaders for an immersive tech conference.",
-      date: "2024-03-15",
-      location: "Main Auditorium",
-      image: null,
-    },
-    {
-      id: "evt-2",
-      title: "AI Workshop Series",
-      description: "Hands-on AI training sessions for students.",
-      date: "2024-02-28",
-      location: "Lab 201",
-      image: null,
-    },
-  ]);
+  const [items, setItems] = useState<EventItem[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  useEffect(() => {
+    getSection("events")
+      .then((content) =>
+        setItems(
+          content.map((item) => ({
+            id: item.id,
+            title: item.title || "",
+            description: item.description || "",
+            date: String(item.meta?.date || ""),
+            location: String(item.meta?.location || ""),
+            image: item.imageUrl || null,
+            imagePublicId: item.imagePublicId || null,
+          }))
+        )
+      )
+      .catch(() => {
+        toast.error("Unable to load events.");
+      });
+  }, []);
+
+  const persistEvents = async (nextItems: EventItem[]) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const uploaded = await Promise.all(
+        nextItems.map(async (item) => {
+          if (!item.file) return item;
+          const media = await uploadImage(item.file);
+          return {
+            ...item,
+            image: media.url,
+            imagePublicId: media.publicId,
+            file: undefined,
+          };
+        })
+      );
+
+      const saved = await saveSection(
+        "events",
+        uploaded.map((item, index) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          imageUrl: item.image || null,
+          imagePublicId: item.imagePublicId || null,
+          sortOrder: index,
+          meta: {
+            date: item.date,
+            location: item.location,
+          },
+        }))
+      );
+
+      setItems(
+        saved.map((item) => ({
+          id: item.id,
+          title: item.title || "",
+          description: item.description || "",
+          date: String(item.meta?.date || ""),
+          location: String(item.meta?.location || ""),
+          image: item.imageUrl || null,
+          imagePublicId: item.imagePublicId || null,
+        }))
+      );
+      toast.success("Events saved successfully!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save events.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
     if (!title.trim() || !description.trim() || !date.trim()) {
       toast.error("Please fill in all required fields");
       return;
@@ -56,16 +116,19 @@ export function EventsSection() {
       date,
       location: location.trim(),
       image,
+      file: imageFile,
     };
 
-    setItems([newEvent, ...items]);
+    const nextItems = [newEvent, ...items];
+    setItems(nextItems);
     setTitle("");
     setDescription("");
     setDate("");
     setLocation("");
     setImage(null);
+    setImageFile(undefined);
     setShowForm(false);
-    toast.success("Event saved successfully!");
+    await persistEvents(nextItems);
   };
 
   const handlePreview = () => {
@@ -152,17 +215,24 @@ export function EventsSection() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Event Image</label>
-                <ImageUpload value={image} onChange={setImage} />
+                <ImageUpload
+                  value={image}
+                  onChange={(preview, file) => {
+                    setImage(preview);
+                    setImageFile(file);
+                  }}
+                />
               </div>
             </div>
 
             <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
               <Button
                 onClick={handleSave}
+                disabled={saving}
                 className="bg-gradient-to-r from-brand-navy to-brand-indigo hover:from-brand-indigo hover:to-brand-sky text-white shadow-md"
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save Event
+                {saving ? "Saving..." : "Save Event"}
               </Button>
               <Button variant="outline" onClick={handlePreview} className="border-brand-sky/50 hover:bg-brand-sky/10 text-brand-navy">
                 <Eye className="h-4 w-4 mr-2" />
@@ -208,7 +278,11 @@ export function EventsSection() {
                     </Badge>
                     <Button
                       variant="outline"
-                      onClick={() => setItems(items.filter((event) => event.id !== item.id))}
+                      onClick={() => {
+                        const nextItems = items.filter((event) => event.id !== item.id);
+                        setItems(nextItems);
+                        void persistEvents(nextItems);
+                      }}
                       className="text-rose-600 border-rose-200 hover:bg-rose-50"
                     >
                       Delete

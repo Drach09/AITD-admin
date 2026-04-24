@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Plus, X, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { getSection, saveSection, uploadImage } from "@/lib/api";
 
 interface PlacementItem {
   id: string;
@@ -19,41 +19,79 @@ interface PlacementItem {
   imageFileName?: string;
 }
 
-function fileToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 export function PlacementsSection() {
   const [items, setItems] = useState<PlacementItem[]>([]);
   const [editing, setEditing] = useState<PlacementItem | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const persistPlacements = async (nextItems: PlacementItem[]) => {
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      const payloadItems = await Promise.all(
+        nextItems.map(async (item) => {
+          const payloadItem: any = {
+            id: item.id,
+            title: item.name,
+            subtitle: item.role,
+            imageUrl: item.preview || null,
+            imagePublicId: item.imageFileName || null,
+            meta: {
+              company: item.company,
+              specialization: item.specialization,
+              batch: item.batch,
+            },
+          };
+
+          if (item.file) {
+            const media = await uploadImage(item.file);
+            payloadItem.imageUrl = media.url;
+            payloadItem.imagePublicId = media.publicId;
+          }
+
+          return payloadItem;
+        })
+      );
+
+      const savedItems = await saveSection("placements", payloadItems);
+      setItems(
+        savedItems.map((item: any) => ({
+          id: item.id,
+          name: item.title ?? "",
+          role: item.subtitle ?? "",
+          company: item.meta?.company ?? "",
+          specialization: item.meta?.specialization ?? "",
+          batch: item.meta?.batch ?? "",
+          preview: item.imageUrl ?? "",
+          imageFileName: item.imagePublicId,
+        }))
+      );
+
+      toast.success("Placements saved!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save placements.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/placements")
-      .then((res) => res.json())
+    getSection("placements")
       .then((data) => {
-        if (Array.isArray(data.items)) {
-          setItems(
-            data.items
-              .filter((item: any) => typeof item.id === "string" && typeof item.preview === "string")
-              .map((item: any) => ({
-                id: item.id,
-                name: item.name ?? "",
-                role: item.role ?? "",
-                company: item.company ?? "",
-                specialization: item.specialization ?? "",
-                batch: item.batch ?? "",
-                preview: item.preview,
-                imageFileName: item.imageFileName,
-              }))
-          );
-        }
+        setItems(
+          data.map((item: any) => ({
+            id: item.id,
+            name: item.title ?? "",
+            role: item.subtitle ?? "",
+            company: item.meta?.company ?? "",
+            specialization: item.meta?.specialization ?? "",
+            batch: item.meta?.batch ?? "",
+            preview: item.imageUrl ?? null,
+            imageFileName: item.imagePublicId ?? undefined,
+          }))
+        );
       })
       .catch(() => {
         // ignore initial load errors
@@ -86,78 +124,28 @@ export function PlacementsSection() {
     }
 
     if (isNew) {
-      setItems([...items, editing]);
+      const nextItems = [...items, editing];
+      setItems(nextItems);
+      void persistPlacements(nextItems);
       toast.success("Placement item added!");
     } else {
-      setItems(items.map((item) => (item.id === editing.id ? editing : item)));
+      const nextItems = items.map((item) => (item.id === editing.id ? editing : item));
+      setItems(nextItems);
+      void persistPlacements(nextItems);
       toast.success("Placement item updated!");
     }
     setEditing(null);
   };
 
   const removeItem = (id: string) => {
-    setItems(items.filter((item) => item.id !== id));
+    const nextItems = items.filter((item) => item.id !== id);
+    setItems(nextItems);
+    void persistPlacements(nextItems);
     toast.success("Placement item removed");
   };
 
   const savePlacements = async () => {
-    if (saving) return;
-    setSaving(true);
-
-    try {
-      const payloadItems = await Promise.all(
-        items.map(async (item) => {
-          const payloadItem: any = {
-            id: item.id,
-            name: item.name,
-            role: item.role,
-            company: item.company,
-            specialization: item.specialization,
-            batch: item.batch,
-            imageFileName: item.imageFileName ?? `placement-${item.id}.jpg`,
-          };
-
-          if (item.file) {
-            payloadItem.dataUrl = await fileToDataUrl(item.file);
-          }
-
-          return payloadItem;
-        })
-      );
-
-      const response = await fetch("/api/placements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: payloadItems }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error?.error || "Failed to save placement items.");
-      }
-
-      const data = await response.json();
-      if (Array.isArray(data.items)) {
-        setItems(
-          data.items.map((item: any) => ({
-            id: item.id,
-            name: item.name ?? "",
-            role: item.role ?? "",
-            company: item.company ?? "",
-            specialization: item.specialization ?? "",
-            batch: item.batch ?? "",
-            preview: item.preview ?? "",
-            imageFileName: item.imageFileName,
-          }))
-        );
-      }
-
-      toast.success("Placements saved!");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save placements.");
-    } finally {
-      setSaving(false);
-    }
+    await persistPlacements(items);
   };
 
   return (
