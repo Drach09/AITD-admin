@@ -1,4 +1,4 @@
-import { Calendar, Image, MessageSquare, BarChart3, Settings, LogOut, Newspaper, User } from "lucide-react";
+import { Calendar, Image, MessageSquare, Settings, LogOut, Newspaper, User } from "lucide-react";
 
 const navItems = [
   { id: "events", label: "Events", icon: Calendar },
@@ -18,10 +18,7 @@ export function AdminSidebar({ active, onNavigate }: AdminSidebarProps) {
     <aside className="hidden md:flex w-72 flex-col bg-gradient-to-b from-brand-navy via-brand-indigo to-brand-navy text-white min-h-screen border-r border-brand-graphite/60 shadow-2xl">
       {/* Logo Section */}
       <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-            <BarChart3 className="h-5 w-5 text-white" />
-          </div>
+        <div className="flex items-center">
           <div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
               AITD Admin
