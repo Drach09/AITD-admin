@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
+import { PreviewDialog } from "@/components/admin/PreviewDialog";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +31,7 @@ export function EventsSection() {
   const [showForm, setShowForm] = useState(false);
   const [items, setItems] = useState<EventItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     getSection("events")
@@ -131,10 +133,6 @@ export function EventsSection() {
     await persistEvents(nextItems);
   };
 
-  const handlePreview = () => {
-    toast.info("Preview functionality coming soon!");
-  };
-
   return (
     <div className="space-y-6">
       <SectionCard
@@ -145,6 +143,9 @@ export function EventsSection() {
         <div className="flex flex-wrap gap-3 items-center">
           <Button onClick={() => setShowForm(true)} className="gap-1.5">
             <Plus className="h-4 w-4" /> Add Event
+          </Button>
+          <Button variant="outline" onClick={() => setPreviewOpen(true)} className="gap-1.5">
+            <Eye className="h-4 w-4" /> Preview
           </Button>
         </div>
 
@@ -171,7 +172,7 @@ export function EventsSection() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter event title"
-                    className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
 
@@ -181,7 +182,7 @@ export function EventsSection() {
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
 
@@ -191,7 +192,7 @@ export function EventsSection() {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Event location"
-                    className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -206,7 +207,7 @@ export function EventsSection() {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe the event in detail"
                     rows={6}
-                    className="border-slate-200 focus:border-blue-500 focus:ring-blue-500 resize-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 resize-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -229,12 +230,12 @@ export function EventsSection() {
               <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-gradient-to-r from-brand-navy to-brand-indigo hover:from-brand-indigo hover:to-brand-sky text-white shadow-md"
+                className="bg-slate-900 hover:bg-slate-800 text-white shadow-md"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {saving ? "Saving..." : "Save Event"}
               </Button>
-              <Button variant="outline" onClick={handlePreview} className="border-brand-sky/50 hover:bg-brand-sky/10 text-brand-navy">
+              <Button variant="outline" onClick={() => setPreviewOpen(true)} className="border-slate-700/50 hover:bg-slate-900/10 text-slate-900 dark:text-slate-100">
                 <Eye className="h-4 w-4 mr-2" />
                 Preview
               </Button>
@@ -273,7 +274,7 @@ export function EventsSection() {
                     <p className="mt-2 text-sm text-slate-700">{item.description}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    <Badge variant="secondary" className="bg-slate-100 text-slate-900">
                       Saved
                     </Badge>
                     <Button
@@ -283,7 +284,7 @@ export function EventsSection() {
                         setItems(nextItems);
                         void persistEvents(nextItems);
                       }}
-                      className="text-rose-600 border-rose-200 hover:bg-rose-50"
+                      className="text-slate-900 border-slate-300 hover:bg-slate-100"
                     >
                       Delete
                     </Button>
@@ -294,6 +295,37 @@ export function EventsSection() {
           )}
         </div>
       </SectionCard>
+
+      <PreviewDialog
+        title="Events Preview"
+        description="View your events as they will appear on the frontend"
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      >
+        {items.length === 0 ? (
+          <p className="text-sm text-slate-500">No events available yet. Add an event to preview it.</p>
+        ) : (
+          <div className="space-y-4">
+            {items.map((item) => (
+              <div key={item.id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                {item.image ? (
+                  <img src={item.image} alt={item.title} className="w-full h-56 object-cover rounded-3xl mb-4" />
+                ) : (
+                  <div className="w-full h-56 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-500 mb-4">
+                    No image available
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <p className="text-sm uppercase tracking-[0.25em] text-slate-500">{item.location || "Location not set"}</p>
+                  <h3 className="text-2xl font-semibold text-slate-900">{item.title}</h3>
+                  <p className="text-sm text-slate-600">{item.description}</p>
+                  <p className="text-sm text-slate-500">{item.date ? new Date(item.date).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "Date not set"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </PreviewDialog>
     </div>
   );
 }

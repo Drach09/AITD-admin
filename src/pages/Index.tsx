@@ -39,10 +39,10 @@ const Index = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-gradient-to-br from-brand-white to-brand-sky/10 dark:from-brand-navy dark:to-brand-indigo">
+    <div className="flex min-h-screen w-full bg-brand-white dark:bg-brand-black">
       <AdminSidebar active={active} onNavigate={setActive} />
       <div className="flex-1 flex flex-col">
-        <header className="h-16 border-b border-brand-graphite/30 bg-brand-white/85 backdrop-blur-xl dark:bg-brand-navy/85 dark:border-brand-graphite/50 flex items-center justify-between px-6 sticky top-0 z-40 shadow-sm">
+        <header className="h-16 border-b border-slate-200/50 bg-brand-white/95 backdrop-blur-xl dark:bg-brand-black/90 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-40 shadow-sm">
           <div className="flex items-center gap-3">
             <MobileNav active={active} onNavigate={setActive} />
             <div>
@@ -59,7 +59,7 @@ const Index = () => {
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Logout
             </Button>
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <div className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white text-sm font-medium">
               A
             </div>
           </div>

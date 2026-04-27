@@ -10,32 +10,32 @@ export function DashboardSection() {
       value: "12",
       change: "+2 this month",
       icon: Calendar,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "text-slate-900",
+      bgColor: "bg-slate-100",
     },
     {
       title: "Active Placements",
       value: "48",
       change: "+8 this week",
       icon: Users,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
+      color: "text-slate-900",
+      bgColor: "bg-slate-100",
     },
     {
       title: "Top Performers",
       value: "6",
       change: "Updated recently",
       icon: Award,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
+      color: "text-slate-900",
+      bgColor: "bg-slate-100",
     },
     {
       title: "Specializations",
       value: "8",
       change: "All active",
       icon: BookOpen,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
+      color: "text-slate-900",
+      bgColor: "bg-slate-100",
     },
   ];
 
@@ -49,14 +49,14 @@ export function DashboardSection() {
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 rounded-2xl p-8 text-white shadow-xl">
+      <div className="bg-slate-900 rounded-2xl p-8 text-white shadow-xl">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Welcome back, Admin!</h1>
-            <p className="text-blue-100 text-lg">Here's what's happening with your AITD portal today.</p>
+            <p className="text-slate-300 text-lg">Here's what's happening with your AITD portal today.</p>
           </div>
           <div className="hidden md:block">
-            <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
+            <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center backdrop-blur-sm">
               <Activity className="h-10 w-10 text-white" />
             </div>
           </div>
@@ -89,7 +89,7 @@ export function DashboardSection() {
         <Card className="shadow-md border-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+              <TrendingUp className="h-5 w-5 text-slate-900" />
               Quick Actions
             </CardTitle>
             <CardDescription>
@@ -97,7 +97,7 @@ export function DashboardSection() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full justify-start gap-3 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md">
+            <Button className="w-full justify-start gap-3 h-12 bg-slate-900 hover:bg-slate-800 text-white shadow-md">
               <Edit className="h-4 w-4" />
               Add New Event
             </Button>
@@ -120,7 +120,7 @@ export function DashboardSection() {
         <Card className="shadow-md border-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-green-600" />
+              <Activity className="h-5 w-5 text-slate-900" />
               Recent Activity
             </CardTitle>
             <CardDescription>
@@ -131,10 +131,7 @@ export function DashboardSection() {
             <div className="space-y-4">
               {recentActivities.map((activity, index) => (
                 <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.type === 'add' ? 'bg-green-500' :
-                    activity.type === 'edit' ? 'bg-blue-500' : 'bg-orange-500'
-                  }`} />
+                  <div className="w-2 h-2 rounded-full bg-slate-900" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-slate-900">{activity.action}</p>
                     <p className="text-xs text-slate-500">{activity.time}</p>
@@ -147,17 +144,17 @@ export function DashboardSection() {
       </div>
 
       {/* System Status */}
-      <Card className="shadow-md border-0 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+      <Card className="shadow-md border-0 bg-slate-100 border-slate-200">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+            <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center">
+              <div className="w-3 h-3 bg-slate-900 rounded-full animate-pulse" />
             </div>
             <div>
-              <h3 className="font-semibold text-green-900">System Status: Healthy</h3>
-              <p className="text-sm text-green-700">All services are running normally. Last updated 5 minutes ago.</p>
+              <h3 className="font-semibold text-slate-900">System Status: Healthy</h3>
+              <p className="text-sm text-slate-600">All services are running normally. Last updated 5 minutes ago.</p>
             </div>
-            <Badge variant="secondary" className="ml-auto bg-green-100 text-green-800">
+            <Badge variant="secondary" className="ml-auto bg-slate-900 text-white">
               Online
             </Badge>
           </div>

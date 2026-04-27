@@ -35,12 +35,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-white to-brand-sky/10 dark:from-brand-navy dark:to-brand-indigo flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-brand-white dark:bg-brand-black flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <Card className="shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-950/90">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-blue-500/10 p-3 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+              <div className="rounded-2xl bg-slate-900 p-3 text-white">
                 <Lock className="h-5 w-5" />
               </div>
               <div>

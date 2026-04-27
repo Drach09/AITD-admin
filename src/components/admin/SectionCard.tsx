@@ -14,7 +14,7 @@ export function SectionCard({ title, description, children, icon }: SectionCardP
       <CardHeader className="pb-4">
         <div className="flex items-center gap-3">
           {icon && (
-            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg text-white">
+            <div className="p-2 bg-slate-900 rounded-lg text-white">
               {icon}
             </div>
           )}

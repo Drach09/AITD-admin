@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
+import { PreviewDialog } from "@/components/admin/PreviewDialog";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Pencil, Trash2, Plus, X } from "lucide-react";
+import { User, Pencil, Trash2, Plus, X, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { getSection, saveSection, uploadImage } from "@/lib/api";
 
@@ -23,6 +24,7 @@ export function FacultySection() {
   const [editing, setEditing] = useState<FacultyItem | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     getSection("faculty")
@@ -131,9 +133,14 @@ export function FacultySection() {
       description="Add, edit, and remove faculty profiles"
       icon={<User className="h-5 w-5" />}
     >
-      <Button onClick={openNew} className="gap-1.5">
-        <Plus className="h-4 w-4" /> Add Faculty
-      </Button>
+      <div className="flex flex-wrap gap-3 items-center">
+        <Button onClick={openNew} className="gap-1.5">
+          <Plus className="h-4 w-4" /> Add Faculty
+        </Button>
+        <Button variant="outline" onClick={() => setPreviewOpen(true)} className="gap-1.5">
+          <Eye className="h-4 w-4" /> Preview
+        </Button>
+      </div>
 
       {editing && (
         <div className="bg-muted/50 rounded-lg p-4 space-y-4 border border-border mt-4">
@@ -235,6 +242,37 @@ export function FacultySection() {
       ) : (
         <p className="text-sm text-slate-500 mt-6">No faculty added yet. Click "Add Faculty" to create a new profile.</p>
       )}
+
+      <PreviewDialog
+        title="Faculty Preview"
+        description="Preview faculty profiles as they will appear on the frontend"
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      >
+        {items.length === 0 ? (
+          <p className="text-sm text-slate-500">No faculty profiles available yet. Add a member to preview it.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {items.map((item) => (
+              <div key={item.id} className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-full h-64 object-cover" />
+                ) : (
+                  <div className="w-full h-64 bg-slate-100 flex items-center justify-center text-slate-500">
+                    No photo uploaded
+                  </div>
+                )}
+                <div className="p-5 space-y-2">
+                  <h3 className="text-xl font-semibold text-slate-900">{item.name}</h3>
+                  <p className="text-sm text-slate-500">{item.title}</p>
+                  <p className="text-sm text-slate-600">{item.department || "Department not set"}</p>
+                  <p className="text-sm text-slate-500">Experience: {item.experience || "N/A"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </PreviewDialog>
     </SectionCard>
   );
 }

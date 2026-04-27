@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
+import { PreviewDialog } from "@/components/admin/PreviewDialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Newspaper, Pencil, Trash2, Plus, X } from "lucide-react";
+import { Newspaper, Pencil, Trash2, Plus, X, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { getSection, saveSection } from "@/lib/api";
 
@@ -19,6 +20,7 @@ export function LatestNewsSection() {
   const [editing, setEditing] = useState<NewsItem | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     getSection("latest-news")
@@ -107,9 +109,14 @@ export function LatestNewsSection() {
       description="Add, edit, and remove the latest news items shown on the site"
       icon={<Newspaper className="h-5 w-5" />}
     >
-      <Button onClick={openNew} className="gap-1.5">
-        <Plus className="h-4 w-4" /> Add News Item
-      </Button>
+      <div className="flex flex-wrap gap-3 items-center">
+        <Button onClick={openNew} className="gap-1.5">
+          <Plus className="h-4 w-4" /> Add News Item
+        </Button>
+        <Button variant="outline" onClick={() => setPreviewOpen(true)} className="gap-1.5">
+          <Eye className="h-4 w-4" /> Preview
+        </Button>
+      </div>
 
       {editing && (
         <div className="bg-muted/50 rounded-lg p-4 space-y-4 border border-border">
@@ -153,6 +160,33 @@ export function LatestNewsSection() {
         </div>
       )}
 
+      <PreviewDialog
+        title="Latest News Preview"
+        description="Preview how latest news items will appear on the frontend"
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      >
+        {items.length === 0 ? (
+          <p className="text-sm text-slate-500">No news items created yet. Add a news item to preview it.</p>
+        ) : (
+          <div className="space-y-4">
+            {items.map((item) => (
+              <div key={item.id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xl font-semibold text-slate-900">{item.title}</h3>
+                  <p className="text-sm text-slate-600">{item.summary}</p>
+                  {item.link && (
+                    <a href={item.link} target="_blank" rel="noreferrer" className="text-sm text-slate-500 hover:text-slate-900">
+                      {item.link}
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </PreviewDialog>
+
       {items.length > 0 && (
         <div className="grid grid-cols-1 gap-4">
           {items.map((item) => (
@@ -164,7 +198,7 @@ export function LatestNewsSection() {
                       href={item.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-lg font-semibold text-foreground hover:text-blue-600 transition-colors"
+                      className="text-lg font-semibold text-foreground hover:text-slate-900 transition-colors"
                     >
                       {item.title}
                     </a>
@@ -173,7 +207,7 @@ export function LatestNewsSection() {
                   )}
                   <p className="text-sm text-slate-600 mt-2">{item.summary}</p>
                   {item.link && (
-                    <p className="text-xs text-blue-500 mt-1 truncate">{item.link}</p>
+                    <p className="text-xs text-slate-500 mt-1 truncate">{item.link}</p>
                   )}
                 </div>
                 <div className="flex gap-1">

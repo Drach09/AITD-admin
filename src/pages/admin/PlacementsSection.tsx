@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
+import { PreviewDialog } from "@/components/admin/PreviewDialog";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Plus, X, Image as ImageIcon } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Eye, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { getSection, saveSection, uploadImage } from "@/lib/api";
 
@@ -24,6 +25,7 @@ export function PlacementsSection() {
   const [editing, setEditing] = useState<PlacementItem | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const persistPlacements = async (nextItems: PlacementItem[]) => {
     if (saving) return;
@@ -157,6 +159,9 @@ export function PlacementsSection() {
         <Button onClick={savePlacements} disabled={saving} variant="secondary">
           {saving ? "Saving..." : "Save Placements"}
         </Button>
+        <Button variant="outline" onClick={() => setPreviewOpen(true)} className="gap-1.5">
+          <Eye className="h-4 w-4" /> Preview
+        </Button>
       </div>
 
       {editing && (
@@ -259,7 +264,7 @@ export function PlacementsSection() {
                   </button>
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-300 text-slate-900 hover:bg-slate-100 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" /> Delete
                   </button>
@@ -271,6 +276,40 @@ export function PlacementsSection() {
       ) : (
         <p className="text-sm text-slate-500 mt-6">No placements added yet. Click &quot;Add Placement&quot; to create a new record.</p>
       )}
+
+      <PreviewDialog
+        title="Placements Preview"
+        description="Preview placement entries as they will appear on the frontend"
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      >
+        {items.length === 0 ? (
+          <p className="text-sm text-slate-500">No placement records available yet. Add a placement to preview it.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {items.map((item) => (
+              <div key={item.id} className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                {item.preview ? (
+                  <img src={item.preview} alt={item.name} className="w-full h-48 object-cover" />
+                ) : (
+                  <div className="w-full h-48 bg-slate-100 flex items-center justify-center text-slate-500">
+                    No preview image
+                  </div>
+                )}
+                <div className="p-4 space-y-2">
+                  <h3 className="text-xl font-semibold text-slate-900">{item.name}</h3>
+                  <p className="text-sm text-slate-500">{item.role}</p>
+                  <p className="text-sm text-slate-600">{item.company}</p>
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600">
+                    <p>{item.specialization ? `Specialization: ${item.specialization}` : "Specialization: not set"}</p>
+                    <p>{item.batch ? `Batch: ${item.batch}` : "Batch not set"}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </PreviewDialog>
     </SectionCard>
   );
 }

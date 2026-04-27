@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
+import { PreviewDialog } from "@/components/admin/PreviewDialog";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Plus, X, Quote } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Quote, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { getSection, saveSection, uploadImage } from "@/lib/api";
 
@@ -22,6 +23,7 @@ export function TestimonialsSection() {
   const [editing, setEditing] = useState<Testimonial | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     getSection("testimonials")
@@ -114,9 +116,14 @@ export function TestimonialsSection() {
 
   return (
     <SectionCard title="Testimonials" description="Manage student testimonials">
-      <Button onClick={openNew} className="gap-1.5">
-        <Plus className="h-4 w-4" /> Add Testimonial
-      </Button>
+      <div className="flex flex-wrap gap-3 items-center">
+        <Button onClick={openNew} className="gap-1.5">
+          <Plus className="h-4 w-4" /> Add Testimonial
+        </Button>
+        <Button variant="outline" onClick={() => setPreviewOpen(true)} className="gap-1.5">
+          <Eye className="h-4 w-4" /> Preview
+        </Button>
+      </div>
 
       {editing && (
         <div className="bg-muted/50 rounded-lg p-4 space-y-4 border border-border">
@@ -144,6 +151,33 @@ export function TestimonialsSection() {
           <Button onClick={save}>Save</Button>
         </div>
       )}
+
+      <PreviewDialog
+        title="Testimonials Preview"
+        description="Preview testimonial cards as they will appear on the frontend"
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      >
+        {items.length === 0 ? (
+          <p className="text-sm text-slate-500">No testimonials yet. Add one to see the frontend preview.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {items.map((item) => (
+              <div key={item.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-full h-44 object-cover rounded-3xl mb-4" />
+                ) : (
+                  <div className="w-full h-44 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-500 mb-4">
+                    No image provided
+                  </div>
+                )}
+                <p className="text-base text-slate-700 leading-relaxed">“{item.text}”</p>
+                <p className="mt-4 text-sm font-semibold text-slate-900">{item.name}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </PreviewDialog>
 
       {items.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
