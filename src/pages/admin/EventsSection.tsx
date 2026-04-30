@@ -6,9 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Plus, Save, Eye, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { getSection, saveSection, uploadImage } from "@/lib/api";
+
+type EventStatus = "upcoming" | "completed";
 
 interface EventItem {
   id: string;
@@ -17,6 +20,7 @@ interface EventItem {
   detailDescription: string;
   date: string;
   location: string;
+  status: EventStatus;
   image?: string | null;
   imagePublicId?: string | null;
   file?: File;
@@ -31,6 +35,7 @@ export function EventsSection() {
   const [detailDescription, setDetailDescription] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
+  const [status, setStatus] = useState<EventStatus>("upcoming");
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
@@ -52,6 +57,7 @@ export function EventsSection() {
             detailDescription: String(item.meta?.detailDescription || ""),
             date: String(item.meta?.date || ""),
             location: String(item.meta?.location || ""),
+            status: item.meta?.status === "completed" ? "completed" : "upcoming",
             image: item.imageUrl || null,
             imagePublicId: item.imagePublicId || null,
             galleryImages: Array.isArray(item.meta?.galleryImages)
@@ -107,6 +113,7 @@ export function EventsSection() {
           meta: {
             date: item.date,
             location: item.location,
+            status: item.status,
             detailDescription: item.detailDescription || "",
             galleryImages: item.galleryImages || [],
             galleryPublicIds: item.galleryPublicIds || [],
@@ -122,6 +129,7 @@ export function EventsSection() {
           detailDescription: String(item.meta?.detailDescription || ""),
           date: String(item.meta?.date || ""),
           location: String(item.meta?.location || ""),
+          status: item.meta?.status === "completed" ? "completed" : "upcoming",
           image: item.imageUrl || null,
           imagePublicId: item.imagePublicId || null,
           galleryImages: Array.isArray(item.meta?.galleryImages)
@@ -155,6 +163,7 @@ export function EventsSection() {
       detailDescription: detailDescription.trim() || description.trim(),
       date,
       location: location.trim(),
+      status,
       image,
       imagePublicId: existing?.imagePublicId || null,
       file: imageFile,
@@ -173,6 +182,7 @@ export function EventsSection() {
     setDetailDescription("");
     setDate("");
     setLocation("");
+    setStatus("upcoming");
     setImage(null);
     setImageFile(undefined);
     setGalleryFiles([]);
@@ -188,6 +198,7 @@ export function EventsSection() {
     setDetailDescription("");
     setDate("");
     setLocation("");
+    setStatus("upcoming");
     setImage(null);
     setImageFile(undefined);
     setGalleryFiles([]);
@@ -202,6 +213,7 @@ export function EventsSection() {
     setDetailDescription(item.detailDescription || "");
     setDate(item.date);
     setLocation(item.location);
+    setStatus(item.status);
     setImage(item.image || null);
     setImageFile(undefined);
     setGalleryFiles([]);
@@ -274,6 +286,21 @@ export function EventsSection() {
                     placeholder="Event location"
                     className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    Event Status
+                  </label>
+                  <Select value={status} onValueChange={(value: EventStatus) => setStatus(value)}>
+                    <SelectTrigger className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                      <SelectValue placeholder="Select event status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -409,6 +436,16 @@ export function EventsSection() {
                     <p className="mt-1 text-xs text-slate-500">Detail gallery images: {item.galleryImages.length}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className={
+                        item.status === "completed"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-900"
+                      }
+                    >
+                      {item.status === "completed" ? "Completed" : "Upcoming"}
+                    </Badge>
                     <Badge variant="secondary" className="bg-slate-100 text-slate-900">
                       Saved
                     </Badge>
@@ -459,6 +496,16 @@ export function EventsSection() {
                   </div>
                 )}
                 <div className="space-y-2">
+                  <Badge
+                    variant="secondary"
+                    className={
+                      item.status === "completed"
+                        ? "w-fit bg-emerald-100 text-emerald-800"
+                        : "w-fit bg-amber-100 text-amber-900"
+                    }
+                  >
+                    {item.status === "completed" ? "Completed Event" : "Upcoming Event"}
+                  </Badge>
                   <p className="text-sm uppercase tracking-[0.25em] text-slate-500">{item.location || "Location not set"}</p>
                   <h3 className="text-2xl font-semibold text-slate-900">{item.title}</h3>
                   <p className="text-sm text-slate-600">{item.description}</p>
