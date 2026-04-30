@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/admin/SectionCard";
 import { PreviewDialog } from "@/components/admin/PreviewDialog";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Newspaper, Pencil, Trash2, Plus, X, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { getSection, saveSection } from "@/lib/api";
+import { getSection, saveSection, uploadImage } from "@/lib/api";
 
 interface NewsItem {
   id: string;
   title: string;
   summary: string;
   link: string;
+  image?: string | null;
+  imagePublicId?: string | null;
+  file?: File;
 }
 
 export function LatestNewsSection() {
@@ -31,6 +35,8 @@ export function LatestNewsSection() {
             title: item.title || "",
             summary: item.description || "",
             link: String(item.meta?.link || ""),
+            image: item.imageUrl || null,
+            imagePublicId: item.imagePublicId || null,
           }))
         )
       )
@@ -41,12 +47,22 @@ export function LatestNewsSection() {
     if (saving) return;
     setSaving(true);
     try {
+      const uploaded = await Promise.all(
+        nextItems.map(async (item) => {
+          if (!item.file) return item;
+          const media = await uploadImage(item.file);
+          return { ...item, image: media.url, imagePublicId: media.publicId, file: undefined };
+        })
+      );
+
       const saved = await saveSection(
         "latest-news",
-        nextItems.map((item, index) => ({
+        uploaded.map((item, index) => ({
           id: item.id,
           title: item.title,
           description: item.summary,
+          imageUrl: item.image || null,
+          imagePublicId: item.imagePublicId || null,
           sortOrder: index,
           meta: { link: item.link },
         }))
@@ -57,6 +73,8 @@ export function LatestNewsSection() {
           title: item.title || "",
           summary: item.description || "",
           link: String(item.meta?.link || ""),
+          image: item.imageUrl || null,
+          imagePublicId: item.imagePublicId || null,
         }))
       );
     } catch (error) {
@@ -67,7 +85,7 @@ export function LatestNewsSection() {
   };
 
   const openNew = () => {
-    setEditing({ id: crypto.randomUUID(), title: "", summary: "", link: "" });
+    setEditing({ id: crypto.randomUUID(), title: "", summary: "", link: "", image: null });
     setIsNew(true);
   };
 
@@ -156,6 +174,14 @@ export function LatestNewsSection() {
             />
           </div>
 
+          <div className="space-y-1.5 max-w-lg">
+            <ImageUpload
+              value={editing.image ?? null}
+              onChange={(url, file) => setEditing({ ...editing, image: url, file })}
+              label="Image (optional)"
+            />
+          </div>
+
           <Button onClick={save}>Save</Button>
         </div>
       )}
@@ -172,6 +198,9 @@ export function LatestNewsSection() {
           <div className="space-y-4">
             {items.map((item) => (
               <div key={item.id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                {item.image ? (
+                  <img src={item.image} alt={item.title} className="w-full h-44 object-cover rounded-3xl mb-4" />
+                ) : null}
                 <div className="flex flex-col gap-2">
                   <h3 className="text-xl font-semibold text-slate-900">{item.title}</h3>
                   <p className="text-sm text-slate-600">{item.summary}</p>
@@ -191,6 +220,9 @@ export function LatestNewsSection() {
         <div className="grid grid-cols-1 gap-4">
           {items.map((item) => (
             <div key={item.id} className="bg-background border border-border rounded-lg p-4 shadow-card hover:shadow-card-hover transition-shadow">
+              {item.image ? (
+                <img src={item.image} alt={item.title} className="w-full h-44 object-cover rounded-lg mb-4" />
+              ) : null}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   {item.link ? (

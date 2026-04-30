@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus, Save, Eye, X } from "lucide-react";
+import { Calendar, Plus, Save, Eye, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { getSection, saveSection, uploadImage } from "@/lib/api";
 
@@ -14,20 +14,28 @@ interface EventItem {
   id: string;
   title: string;
   description: string;
+  detailDescription: string;
   date: string;
   location: string;
   image?: string | null;
   imagePublicId?: string | null;
   file?: File;
+  galleryImages: string[];
+  galleryPublicIds: string[];
+  galleryFiles?: File[];
 }
 
 export function EventsSection() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [detailDescription, setDetailDescription] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [items, setItems] = useState<EventItem[]>([]);
   const [saving, setSaving] = useState(false);
@@ -41,10 +49,17 @@ export function EventsSection() {
             id: item.id,
             title: item.title || "",
             description: item.description || "",
+            detailDescription: String(item.meta?.detailDescription || ""),
             date: String(item.meta?.date || ""),
             location: String(item.meta?.location || ""),
             image: item.imageUrl || null,
             imagePublicId: item.imagePublicId || null,
+            galleryImages: Array.isArray(item.meta?.galleryImages)
+              ? item.meta.galleryImages.map((value) => String(value))
+              : [],
+            galleryPublicIds: Array.isArray(item.meta?.galleryPublicIds)
+              ? item.meta.galleryPublicIds.map((value) => String(value))
+              : [],
           }))
         )
       )
@@ -59,13 +74,23 @@ export function EventsSection() {
     try {
       const uploaded = await Promise.all(
         nextItems.map(async (item) => {
-          if (!item.file) return item;
-          const media = await uploadImage(item.file);
+          const uploadedCover = item.file ? await uploadImage(item.file) : null;
+          const uploadedGallery = item.galleryFiles?.length
+            ? await Promise.all(item.galleryFiles.map((file) => uploadImage(file)))
+            : [];
+
           return {
             ...item,
-            image: media.url,
-            imagePublicId: media.publicId,
+            image: uploadedCover ? uploadedCover.url : item.image || null,
+            imagePublicId: uploadedCover ? uploadedCover.publicId : item.imagePublicId || null,
+            galleryImages: uploadedGallery.length
+              ? uploadedGallery.map((image) => image.url)
+              : item.galleryImages,
+            galleryPublicIds: uploadedGallery.length
+              ? uploadedGallery.map((image) => image.publicId)
+              : item.galleryPublicIds,
             file: undefined,
+            galleryFiles: undefined,
           };
         })
       );
@@ -82,6 +107,9 @@ export function EventsSection() {
           meta: {
             date: item.date,
             location: item.location,
+            detailDescription: item.detailDescription || "",
+            galleryImages: item.galleryImages || [],
+            galleryPublicIds: item.galleryPublicIds || [],
           },
         }))
       );
@@ -91,10 +119,17 @@ export function EventsSection() {
           id: item.id,
           title: item.title || "",
           description: item.description || "",
+          detailDescription: String(item.meta?.detailDescription || ""),
           date: String(item.meta?.date || ""),
           location: String(item.meta?.location || ""),
           image: item.imageUrl || null,
           imagePublicId: item.imagePublicId || null,
+          galleryImages: Array.isArray(item.meta?.galleryImages)
+            ? item.meta.galleryImages.map((value) => String(value))
+            : [],
+          galleryPublicIds: Array.isArray(item.meta?.galleryPublicIds)
+            ? item.meta.galleryPublicIds.map((value) => String(value))
+            : [],
         }))
       );
       toast.success("Events saved successfully!");
@@ -111,26 +146,68 @@ export function EventsSection() {
       return;
     }
 
-    const newEvent: EventItem = {
-      id: crypto.randomUUID(),
+    const existing = editingId ? items.find((item) => item.id === editingId) : undefined;
+
+    const nextEvent: EventItem = {
+      id: editingId || crypto.randomUUID(),
       title: title.trim(),
       description: description.trim(),
+      detailDescription: detailDescription.trim() || description.trim(),
       date,
       location: location.trim(),
       image,
+      imagePublicId: existing?.imagePublicId || null,
       file: imageFile,
+      galleryFiles: galleryFiles.length ? galleryFiles : undefined,
+      galleryImages: galleryPreviews,
+      galleryPublicIds: existing?.galleryPublicIds || [],
     };
 
-    const nextItems = [newEvent, ...items];
+    const nextItems = editingId
+      ? items.map((item) => (item.id === editingId ? nextEvent : item))
+      : [nextEvent, ...items];
+
     setItems(nextItems);
     setTitle("");
     setDescription("");
+    setDetailDescription("");
     setDate("");
     setLocation("");
     setImage(null);
     setImageFile(undefined);
+    setGalleryFiles([]);
+    setGalleryPreviews([]);
+    setEditingId(null);
     setShowForm(false);
     await persistEvents(nextItems);
+  };
+
+  const openCreate = () => {
+    setTitle("");
+    setDescription("");
+    setDetailDescription("");
+    setDate("");
+    setLocation("");
+    setImage(null);
+    setImageFile(undefined);
+    setGalleryFiles([]);
+    setGalleryPreviews([]);
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (item: EventItem) => {
+    setTitle(item.title);
+    setDescription(item.description);
+    setDetailDescription(item.detailDescription || "");
+    setDate(item.date);
+    setLocation(item.location);
+    setImage(item.image || null);
+    setImageFile(undefined);
+    setGalleryFiles([]);
+    setGalleryPreviews(item.galleryImages || []);
+    setEditingId(item.id);
+    setShowForm(true);
   };
 
   return (
@@ -141,7 +218,7 @@ export function EventsSection() {
         icon={<Calendar className="h-5 w-5" />}
       >
         <div className="flex flex-wrap gap-3 items-center">
-          <Button onClick={() => setShowForm(true)} className="gap-1.5">
+          <Button onClick={openCreate} className="gap-1.5">
             <Plus className="h-4 w-4" /> Add Event
           </Button>
           <Button variant="outline" onClick={() => setPreviewOpen(true)} className="gap-1.5">
@@ -152,10 +229,13 @@ export function EventsSection() {
         {showForm && (
           <div className="bg-muted/50 rounded-lg p-4 mt-4 border border-border">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-semibold">New Event</span>
+              <span className="text-sm font-semibold">{editingId ? "Edit Event" : "New Event"}</span>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingId(null);
+                }}
                 className="text-slate-500 hover:text-slate-900"
               >
                 <X className="h-4 w-4" />
@@ -210,6 +290,19 @@ export function EventsSection() {
                     className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 resize-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    Detail Page Description
+                  </label>
+                  <Textarea
+                    value={detailDescription}
+                    onChange={(e) => setDetailDescription(e.target.value)}
+                    placeholder="Detailed event description for the event page"
+                    rows={7}
+                    className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 resize-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </div>
               </div>
             </div>
 
@@ -224,6 +317,44 @@ export function EventsSection() {
                   }}
                 />
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Detail Page Gallery Images (multiple)
+                </label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    const previews = files.map((file) => URL.createObjectURL(file));
+                    setGalleryFiles(files);
+                    setGalleryPreviews(previews);
+                  }}
+                  className="border-slate-200 focus:border-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+                {galleryPreviews.length ? (
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    {galleryPreviews.map((preview) => (
+                      <img key={preview} src={preview} alt="Gallery preview" className="h-24 w-full rounded-lg object-cover border border-slate-200" />
+                    ))}
+                  </div>
+                ) : null}
+                {editingId && galleryPreviews.length ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setGalleryFiles([]);
+                      setGalleryPreviews([]);
+                    }}
+                    className="border-slate-300 hover:bg-slate-100"
+                  >
+                    Clear Gallery
+                  </Button>
+                ) : null}
+              </div>
             </div>
 
             <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
@@ -233,7 +364,7 @@ export function EventsSection() {
                 className="bg-slate-900 hover:bg-slate-800 text-white shadow-md"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? "Saving..." : "Save Event"}
+                {saving ? "Saving..." : editingId ? "Update Event" : "Save Event"}
               </Button>
               <Button variant="outline" onClick={() => setPreviewOpen(true)} className="border-slate-700/50 hover:bg-slate-900/10 text-slate-900 dark:text-slate-100">
                 <Eye className="h-4 w-4 mr-2" />
@@ -272,11 +403,23 @@ export function EventsSection() {
                         : "No date"} • {item.location || "No location"}
                     </p>
                     <p className="mt-2 text-sm text-slate-700">{item.description}</p>
+                    {item.detailDescription ? (
+                      <p className="mt-1 text-sm text-slate-600 line-clamp-2">{item.detailDescription}</p>
+                    ) : null}
+                    <p className="mt-1 text-xs text-slate-500">Detail gallery images: {item.galleryImages.length}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary" className="bg-slate-100 text-slate-900">
                       Saved
                     </Badge>
+                    <Button
+                      variant="outline"
+                      onClick={() => openEdit(item)}
+                      className="text-slate-900 border-slate-300 hover:bg-slate-100"
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => {
