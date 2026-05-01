@@ -29,6 +29,10 @@ interface EventItem {
   galleryFiles?: File[];
 }
 
+function parseEventStatus(value: unknown, fallback: EventStatus = "upcoming"): EventStatus {
+  return value === "completed" || value === "upcoming" ? value : fallback;
+}
+
 export function EventsSection() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -57,7 +61,7 @@ export function EventsSection() {
             detailDescription: String(item.meta?.detailDescription || ""),
             date: String(item.meta?.date || ""),
             location: String(item.meta?.location || ""),
-            status: item.meta?.status === "completed" ? "completed" : "upcoming",
+            status: parseEventStatus((item.meta as Record<string, unknown> | undefined)?.status),
             image: item.imageUrl || null,
             imagePublicId: item.imagePublicId || null,
             galleryImages: Array.isArray(item.meta?.galleryImages)
@@ -122,23 +126,29 @@ export function EventsSection() {
       );
 
       setItems(
-        saved.map((item) => ({
-          id: item.id,
-          title: item.title || "",
-          description: item.description || "",
-          detailDescription: String(item.meta?.detailDescription || ""),
-          date: String(item.meta?.date || ""),
-          location: String(item.meta?.location || ""),
-          status: item.meta?.status === "completed" ? "completed" : "upcoming",
-          image: item.imageUrl || null,
-          imagePublicId: item.imagePublicId || null,
-          galleryImages: Array.isArray(item.meta?.galleryImages)
-            ? item.meta.galleryImages.map((value) => String(value))
-            : [],
-          galleryPublicIds: Array.isArray(item.meta?.galleryPublicIds)
-            ? item.meta.galleryPublicIds.map((value) => String(value))
-            : [],
-        }))
+        saved.map((item) => {
+          const fallbackStatus = uploaded.find((eventItem) => eventItem.id === item.id)?.status || "upcoming";
+          return {
+            id: item.id,
+            title: item.title || "",
+            description: item.description || "",
+            detailDescription: String(item.meta?.detailDescription || ""),
+            date: String(item.meta?.date || ""),
+            location: String(item.meta?.location || ""),
+            status: parseEventStatus(
+              (item.meta as Record<string, unknown> | undefined)?.status,
+              fallbackStatus
+            ),
+            image: item.imageUrl || null,
+            imagePublicId: item.imagePublicId || null,
+            galleryImages: Array.isArray(item.meta?.galleryImages)
+              ? item.meta.galleryImages.map((value) => String(value))
+              : [],
+            galleryPublicIds: Array.isArray(item.meta?.galleryPublicIds)
+              ? item.meta.galleryPublicIds.map((value) => String(value))
+              : [],
+          };
+        })
       );
       toast.success("Events saved successfully!");
     } catch (error) {

@@ -8,14 +8,12 @@ import { EventsSection } from "@/pages/admin/EventsSection";
 import { PlacementsSection } from "@/pages/admin/PlacementsSection";
 import { LatestNewsSection } from "@/pages/admin/LatestNewsSection";
 import { TestimonialsSection } from "@/pages/admin/TestimonialsSection";
-import { FacultySection } from "@/pages/admin/FacultySection";
 
 const sectionTitles: Record<string, string> = {
   events: "Events",
   placements: "Placements",
   "latest-news": "Latest News",
   testimonials: "Testimonials",
-  faculty: "Faculty",
 };
 
 const Index = () => {
@@ -33,7 +31,6 @@ const Index = () => {
       case "placements": return <PlacementsSection />;
       case "latest-news": return <LatestNewsSection />;
       case "testimonials": return <TestimonialsSection />;
-      case "faculty": return <FacultySection />;
       default: return <EventsSection />;
     }
   };
