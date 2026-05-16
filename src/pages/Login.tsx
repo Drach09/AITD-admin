@@ -85,11 +85,7 @@ export default function Login() {
                 </Button>
               </div>
             </form>
-            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-              <p className="font-medium text-slate-900 dark:text-slate-100">Admin credentials</p>
-              <p>Username: <span className="font-semibold">aitd_admin_2026</span></p>
-              <p>Password: <span className="font-semibold">2026AITD123</span></p>
-            </div>
+
           </CardContent>
         </Card>
       </div>
