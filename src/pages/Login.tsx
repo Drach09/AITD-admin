@@ -59,7 +59,7 @@ export default function Login() {
                   <Input
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    placeholder="aitd_admin_2026"
+                    placeholder="Enter your username"
                     autoComplete="username"
                     className="pr-10"
                   />
