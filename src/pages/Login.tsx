@@ -3,16 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lock, User } from "lucide-react";
+import { Lock, User, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { loginAdmin } from "@/lib/api";
 
-const ADMIN_USERNAME = "aitd_admin_2026";
-const ADMIN_PASSWORD = "2026AITD123";
+const ADMIN_USERNAME = "aiem_admin_2026";
+const ADMIN_PASSWORD = "2026AIEM123";
 const AUTH_STORAGE_KEY = "aitd-admin-authenticated";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,17 +23,20 @@ export default function Login() {
     }
   }, [navigate]);
 
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setLoading(true);
 
-    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-      toast.error("Invalid admin credentials.");
-      return;
+    try {
+      await loginAdmin(username, password);
+      localStorage.setItem(AUTH_STORAGE_KEY, "true");
+      toast.success("Login successful. Welcome back!");
+      navigate("/dashboard", { replace: true });
+    } catch (error: any) {
+      toast.error(error.message || "Invalid admin credentials.");
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.setItem(AUTH_STORAGE_KEY, "true");
-    toast.success("Login successful. Welcome back!");
-    navigate("/dashboard", { replace: true });
   };
 
   return (
@@ -62,6 +67,7 @@ export default function Login() {
                     placeholder="Enter your username"
                     autoComplete="username"
                     className="pr-10"
+                    disabled={loading}
                   />
                   <User className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </div>
@@ -76,12 +82,20 @@ export default function Login() {
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   className="pr-10"
+                  disabled={loading}
                 />
               </div>
 
               <div>
-                <Button type="submit" className="w-full">
-                  Sign in
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign in"
+                  )}
                 </Button>
               </div>
             </form>

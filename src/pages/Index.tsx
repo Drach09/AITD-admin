@@ -8,19 +8,27 @@ import { EventsSection } from "@/pages/admin/EventsSection";
 import { PlacementsSection } from "@/pages/admin/PlacementsSection";
 import { LatestNewsSection } from "@/pages/admin/LatestNewsSection";
 import { TestimonialsSection } from "@/pages/admin/TestimonialsSection";
+import { ChangePasswordSection } from "@/pages/admin/ChangePasswordSection";
+import { logoutAdmin } from "@/lib/api";
 
 const sectionTitles: Record<string, string> = {
   events: "Events",
   placements: "Placements",
   "latest-news": "Latest News",
   testimonials: "Testimonials",
+  "change-password": "Change Password",
 };
 
 const Index = () => {
   const [active, setActive] = useState("events");
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutAdmin();
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
     localStorage.removeItem("aitd-admin-authenticated");
     navigate("/", { replace: true });
   };
@@ -31,6 +39,7 @@ const Index = () => {
       case "placements": return <PlacementsSection />;
       case "latest-news": return <LatestNewsSection />;
       case "testimonials": return <TestimonialsSection />;
+      case "change-password": return <ChangePasswordSection />;
       default: return <EventsSection />;
     }
   };
