@@ -46,6 +46,24 @@ export async function getSection(section: string): Promise<ContentItem[]> {
   return Array.isArray(data.items) ? data.items : [];
 }
 
+export interface Inquiry {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  message: string;
+  created_at: string;
+}
+
+export async function getInquiries(): Promise<Inquiry[]> {
+  const response = await apiFetch(`${API_BASE_URL}/inquiries`);
+  if (!response.ok) {
+    throw new Error("Failed to load inquiries.");
+  }
+  const data = await response.json();
+  return Array.isArray(data.inquiries) ? data.inquiries : [];
+}
+
 export async function saveSection(section: string, items: ContentItem[]): Promise<ContentItem[]> {
   const response = await apiFetch(`${API_BASE_URL}/content/${section}`, {
     method: "POST",

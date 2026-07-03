@@ -8,6 +8,7 @@ import { EventsSection } from "@/pages/admin/EventsSection";
 import { PlacementsSection } from "@/pages/admin/PlacementsSection";
 import { LatestNewsSection } from "@/pages/admin/LatestNewsSection";
 import { TestimonialsSection } from "@/pages/admin/TestimonialsSection";
+import InquiriesTab from "@/components/admin/InquiriesTab";
 import { ChangePasswordSection } from "@/pages/admin/ChangePasswordSection";
 import { logoutAdmin } from "@/lib/api";
 
@@ -16,6 +17,7 @@ const sectionTitles: Record<string, string> = {
   placements: "Placements",
   "latest-news": "Latest News",
   testimonials: "Testimonials",
+  inquiries: "Inquiries",
   "change-password": "Change Password",
 };
 
@@ -39,6 +41,7 @@ const Index = () => {
       case "placements": return <PlacementsSection />;
       case "latest-news": return <LatestNewsSection />;
       case "testimonials": return <TestimonialsSection />;
+      case "inquiries": return <InquiriesTab />;
       case "change-password": return <ChangePasswordSection />;
       default: return <EventsSection />;
     }

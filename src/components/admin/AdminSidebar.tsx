@@ -5,6 +5,7 @@ const navItems = [
   { id: "placements", label: "Placements", icon: Image },
   { id: "latest-news", label: "Latest News", icon: Newspaper },
   { id: "testimonials", label: "Testimonials", icon: MessageSquare },
+  { id: "inquiries", label: "Inquiries", icon: MessageSquare },
   { id: "change-password", label: "Change Password", icon: KeyRound },
 ];
 
