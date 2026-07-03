@@ -21,7 +21,7 @@ export function AdminSidebar({ active, onNavigate }: AdminSidebarProps) {
         <div className="flex items-center">
           <div>
             <h1 className="text-xl font-bold text-white">
-              AITD Admin
+              AIEM Admin
             </h1>
             <p className="text-xs text-slate-400">Management Portal</p>
           </div>
@@ -36,15 +36,13 @@ export function AdminSidebar({ active, onNavigate }: AdminSidebarProps) {
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
-                isActive
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${isActive
                   ? "bg-slate-100 text-slate-950 shadow-lg shadow-slate-300/20"
                   : "text-slate-300 hover:bg-slate-900/80 hover:text-white hover:shadow-md"
-              }`}
+                }`}
             >
-              <item.icon className={`h-5 w-5 transition-colors ${
-                isActive ? "text-white" : "text-slate-400 group-hover:text-slate-100"
-              }`} />
+              <item.icon className={`h-5 w-5 transition-colors ${isActive ? "text-white" : "text-slate-400 group-hover:text-slate-100"
+                }`} />
               <span className="font-medium">{item.label}</span>
               {isActive && (
                 <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse" />

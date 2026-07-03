@@ -1,3 +1,5 @@
+import { compressImage } from "./image-compressor";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 let csrfToken: string | null = null;
@@ -58,9 +60,46 @@ export async function saveSection(section: string, items: ContentItem[]): Promis
   return Array.isArray(data.items) ? data.items : [];
 }
 
+export async function createItem(section: string, item: Omit<ContentItem, "id"> & { id?: string }): Promise<ContentItem> {
+  const response = await apiFetch(`${API_BASE_URL}/content/${section}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to create item.");
+  }
+  return response.json();
+}
+
+export async function updateItem(section: string, id: string, item: Partial<ContentItem>): Promise<ContentItem> {
+  const response = await apiFetch(`${API_BASE_URL}/content/${section}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to update item.");
+  }
+  return response.json();
+}
+
+export async function deleteItem(section: string, id: string): Promise<void> {
+  const response = await apiFetch(`${API_BASE_URL}/content/${section}/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to delete item.");
+  }
+}
+
 export async function uploadImage(file: File): Promise<{ url: string; publicId: string }> {
+  const compressed = await compressImage(file);
   const form = new FormData();
-  form.append("image", file);
+  form.append("image", compressed);
 
   const response = await apiFetch(`${API_BASE_URL}/uploads/image`, {
     method: "POST",

@@ -18,7 +18,7 @@ export function PreviewDialog({ title, description, open, onOpenChange, children
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
-        <div className="mt-4 space-y-4">{children}</div>
+        <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">{children}</div>
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close preview

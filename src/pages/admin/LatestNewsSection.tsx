@@ -5,9 +5,9 @@ import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Newspaper, Pencil, Trash2, Plus, X, Eye } from "lucide-react";
+import { Newspaper, Pencil, Trash2, Plus, X, Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getSection, saveSection, uploadImage } from "@/lib/api";
+import { getSection, createItem, updateItem, deleteItem, uploadImage } from "@/lib/api";
 
 interface NewsItem {
   id: string;
@@ -18,6 +18,26 @@ interface NewsItem {
   imagePublicId?: string | null;
   file?: File;
 }
+
+const generateUUID = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+const isValidUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 
 export function LatestNewsSection() {
   const [items, setItems] = useState<NewsItem[]>([]);
@@ -43,49 +63,8 @@ export function LatestNewsSection() {
       .catch(() => toast.error("Unable to load latest news."));
   }, []);
 
-  const persist = async (nextItems: NewsItem[]) => {
-    if (saving) return;
-    setSaving(true);
-    try {
-      const uploaded = await Promise.all(
-        nextItems.map(async (item) => {
-          if (!item.file) return item;
-          const media = await uploadImage(item.file);
-          return { ...item, image: media.url, imagePublicId: media.publicId, file: undefined };
-        })
-      );
-
-      const saved = await saveSection(
-        "latest-news",
-        uploaded.map((item, index) => ({
-          id: item.id,
-          title: item.title,
-          description: item.summary,
-          imageUrl: item.image || null,
-          imagePublicId: item.imagePublicId || null,
-          sortOrder: index,
-          meta: { link: item.link },
-        }))
-      );
-      setItems(
-        saved.map((item) => ({
-          id: item.id,
-          title: item.title || "",
-          summary: item.description || "",
-          link: String(item.meta?.link || ""),
-          image: item.imageUrl || null,
-          imagePublicId: item.imagePublicId || null,
-        }))
-      );
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save latest news.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const openNew = () => {
-    setEditing({ id: crypto.randomUUID(), title: "", summary: "", link: "", image: null });
+    setEditing({ id: generateUUID(), title: "", summary: "", link: "", image: null });
     setIsNew(true);
   };
 
@@ -94,31 +73,95 @@ export function LatestNewsSection() {
     setIsNew(false);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!editing || !editing.title.trim() || !editing.summary.trim()) {
       toast.error("Title and summary are required");
       return;
     }
 
-    if (isNew) {
-      const nextItems = [...items, editing];
-      setItems(nextItems);
-      void persist(nextItems);
-    } else {
-      const nextItems = items.map((item) => (item.id === editing.id ? editing : item));
-      setItems(nextItems);
-      void persist(nextItems);
+    let finalLink = editing.link.trim();
+    if (finalLink) {
+      if (!/^https?:\/\//i.test(finalLink)) {
+        finalLink = `https://${finalLink}`;
+      }
+      if (!isValidUrl(finalLink)) {
+        toast.error("Please enter a valid URL (starting with http:// or https://)");
+        return;
+      }
     }
 
-    setEditing(null);
-    toast.success(isNew ? "News item added!" : "News item updated!");
+    setSaving(true);
+    try {
+      let imageUrl = editing.image;
+      let imagePublicId = editing.imagePublicId;
+
+      if (editing.file) {
+        const media = await uploadImage(editing.file);
+        imageUrl = media.url;
+        imagePublicId = media.publicId;
+      }
+
+      const payload = {
+        id: editing.id,
+        title: editing.title.trim(),
+        description: editing.summary.trim(),
+        imageUrl: imageUrl || null,
+        imagePublicId: imagePublicId || null,
+        meta: { link: finalLink },
+      };
+
+      if (isNew) {
+        const created = await createItem("latest-news", payload);
+        setItems((prev) => [
+          ...prev,
+          {
+            id: created.id,
+            title: created.title || "",
+            summary: created.description || "",
+            link: String(created.meta?.link || ""),
+            image: created.imageUrl || null,
+            imagePublicId: created.imagePublicId || null,
+          },
+        ]);
+        toast.success("News item added!");
+      } else {
+        const updated = await updateItem("latest-news", editing.id, payload);
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === editing.id
+              ? {
+                  id: updated.id,
+                  title: updated.title || "",
+                  summary: updated.description || "",
+                  link: String(updated.meta?.link || ""),
+                  image: updated.imageUrl || null,
+                  imagePublicId: updated.imagePublicId || null,
+                }
+              : item
+          )
+        );
+        toast.success("News item updated!");
+      }
+      setEditing(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save latest news.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const remove = (id: string) => {
-    const nextItems = items.filter((item) => item.id !== id);
-    setItems(nextItems);
-    void persist(nextItems);
-    toast.success("News item deleted");
+  const remove = async (id: string) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await deleteItem("latest-news", id);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      toast.success("News item deleted");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete news item.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -128,7 +171,7 @@ export function LatestNewsSection() {
       icon={<Newspaper className="h-5 w-5" />}
     >
       <div className="flex flex-wrap gap-3 items-center">
-        <Button onClick={openNew} className="gap-1.5">
+        <Button onClick={openNew} disabled={saving} className="gap-1.5">
           <Plus className="h-4 w-4" /> Add News Item
         </Button>
         <Button variant="outline" onClick={() => setPreviewOpen(true)} className="gap-1.5">
@@ -140,7 +183,7 @@ export function LatestNewsSection() {
         <div className="bg-muted/50 rounded-lg p-4 space-y-4 border border-border">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">{isNew ? "New" : "Edit"} News Item</span>
-            <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground">
+            <button onClick={() => setEditing(null)} disabled={saving} className="text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -151,6 +194,7 @@ export function LatestNewsSection() {
               value={editing.title}
               onChange={(e) => setEditing({ ...editing, title: e.target.value })}
               placeholder="News title"
+              disabled={saving}
             />
           </div>
 
@@ -161,6 +205,7 @@ export function LatestNewsSection() {
               onChange={(e) => setEditing({ ...editing, summary: e.target.value })}
               placeholder="Short summary of the news"
               rows={4}
+              disabled={saving}
             />
           </div>
 
@@ -171,6 +216,7 @@ export function LatestNewsSection() {
               onChange={(e) => setEditing({ ...editing, link: e.target.value })}
               placeholder="https://example.com"
               type="url"
+              disabled={saving}
             />
           </div>
 
@@ -179,10 +225,20 @@ export function LatestNewsSection() {
               value={editing.image ?? null}
               onChange={(url, file) => setEditing({ ...editing, image: url, file })}
               label="Image (optional)"
+              disabled={saving}
             />
           </div>
 
-          <Button onClick={save}>Save</Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save"
+            )}
+          </Button>
         </div>
       )}
 
@@ -195,19 +251,21 @@ export function LatestNewsSection() {
         {items.length === 0 ? (
           <p className="text-sm text-slate-500">No news items created yet. Add a news item to preview it.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4 bg-slate-50 rounded-xl justify-items-center">
             {items.map((item) => (
-              <div key={item.id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div key={item.id} className="flex flex-col w-full max-w-[340px] min-h-[382px] overflow-hidden rounded-[20px] bg-white border border-slate-200/60 shadow-[0_18px_44px_rgba(15,23,42,0.08)] transition-all hover:translate-y-[-4px] text-slate-900 text-left">
                 {item.image ? (
-                  <img src={item.image} alt={item.title} className="w-full h-44 object-cover rounded-3xl mb-4" />
+                  <div className="w-full h-[196px] overflow-hidden bg-slate-100 flex-shrink-0">
+                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                  </div>
                 ) : null}
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-xl font-semibold text-slate-900">{item.title}</h3>
-                  <p className="text-sm text-slate-600">{item.summary}</p>
+                <div className="p-5 flex flex-col flex-1">
+                  <p className="text-lg font-semibold text-slate-900 line-clamp-2 mb-2">{item.title}</p>
+                  <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed mb-4">{item.summary}</p>
                   {item.link && (
-                    <a href={item.link} target="_blank" rel="noreferrer" className="text-sm text-slate-500 hover:text-slate-900">
-                      {item.link}
-                    </a>
+                    <span className="mt-auto text-xs text-blue-600 truncate font-medium">
+                      🔗 {item.link}
+                    </span>
                   )}
                 </div>
               </div>
@@ -230,23 +288,23 @@ export function LatestNewsSection() {
                       href={item.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-lg font-semibold text-foreground hover:text-slate-900 transition-colors"
+                      className="text-lg font-semibold text-foreground hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
                     >
                       {item.title}
                     </a>
                   ) : (
                     <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
                   )}
-                  <p className="text-sm text-slate-600 mt-2">{item.summary}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{item.summary}</p>
                   {item.link && (
                     <p className="text-xs text-slate-500 mt-1 truncate">{item.link}</p>
                   )}
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(item)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                  <button onClick={() => openEdit(item)} disabled={saving} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => remove(item.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                  <button onClick={() => remove(item.id)} disabled={saving} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>

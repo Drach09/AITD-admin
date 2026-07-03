@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, Award, BookOpen, TrendingUp, Activity, Eye, Edit } from "lucide-react";
+import { Calendar, Users, TrendingUp, Activity, Eye, Edit } from "lucide-react";
 
 export function DashboardSection() {
   const stats = [
@@ -21,29 +21,12 @@ export function DashboardSection() {
       color: "text-slate-900",
       bgColor: "bg-slate-100",
     },
-    {
-      title: "Top Performers",
-      value: "6",
-      change: "Updated recently",
-      icon: Award,
-      color: "text-slate-900",
-      bgColor: "bg-slate-100",
-    },
-    {
-      title: "Specializations",
-      value: "8",
-      change: "All active",
-      icon: BookOpen,
-      color: "text-slate-900",
-      bgColor: "bg-slate-100",
-    },
   ];
 
   const recentActivities = [
     { action: "Updated Events section", time: "2 hours ago", type: "update" },
     { action: "Added new placement record", time: "4 hours ago", type: "add" },
     { action: "Modified testimonials", time: "1 day ago", type: "edit" },
-    { action: "Updated HOD information", time: "2 days ago", type: "update" },
   ];
 
   return (
@@ -53,7 +36,7 @@ export function DashboardSection() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Welcome back, Admin!</h1>
-            <p className="text-slate-300 text-lg">Here's what's happening with your AITD portal today.</p>
+            <p className="text-slate-300 text-lg">Here's what's happening with your AIEM portal today.</p>
           </div>
           <div className="hidden md:block">
             <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -104,10 +87,6 @@ export function DashboardSection() {
             <Button variant="outline" className="w-full justify-start gap-3 h-12 border-slate-200 hover:bg-slate-50">
               <Users className="h-4 w-4" />
               Update Placements
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-3 h-12 border-slate-200 hover:bg-slate-50">
-              <Award className="h-4 w-4" />
-              Manage Top Performers
             </Button>
             <Button variant="outline" className="w-full justify-start gap-3 h-12 border-slate-200 hover:bg-slate-50">
               <Eye className="h-4 w-4" />

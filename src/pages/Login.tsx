@@ -32,8 +32,8 @@ export default function Login() {
       localStorage.setItem(AUTH_STORAGE_KEY, "true");
       toast.success("Login successful. Welcome back!");
       navigate("/dashboard", { replace: true });
-    } catch (error: any) {
-      toast.error(error.message || "Invalid admin credentials.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Invalid admin credentials.");
     } finally {
       setLoading(false);
     }

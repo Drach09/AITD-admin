@@ -34,7 +34,7 @@ export function ChangePasswordSection() {
       uppercase: /[A-Z]/.test(newPassword),
       lowercase: /[a-z]/.test(newPassword),
       number: /[0-9]/.test(newPassword),
-      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword),
+      special: /[^a-zA-Z0-9\s]/.test(newPassword),
     });
   }, [newPassword]);
 
@@ -83,8 +83,8 @@ export function ChangePasswordSection() {
       setTimeout(() => {
         navigate("/", { replace: true });
       }, 2000);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update password.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update password.");
     } finally {
       setLoading(false);
     }

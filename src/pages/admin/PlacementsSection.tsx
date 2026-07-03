@@ -4,9 +4,9 @@ import { PreviewDialog } from "@/components/admin/PreviewDialog";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Plus, X, Eye, Image as ImageIcon } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Eye, Image as ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getSection, saveSection, uploadImage } from "@/lib/api";
+import { getSection, createItem, updateItem, deleteItem, uploadImage } from "@/lib/api";
 
 interface PlacementItem {
   id: string;
@@ -20,6 +20,17 @@ interface PlacementItem {
   imageFileName?: string;
 }
 
+const generateUUID = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 export function PlacementsSection() {
   const [items, setItems] = useState<PlacementItem[]>([]);
   const [editing, setEditing] = useState<PlacementItem | null>(null);
@@ -27,63 +38,11 @@ export function PlacementsSection() {
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  const persistPlacements = async (nextItems: PlacementItem[]) => {
-    if (saving) return;
-    setSaving(true);
-
-    try {
-      const payloadItems = await Promise.all(
-        nextItems.map(async (item) => {
-          const payloadItem: any = {
-            id: item.id,
-            title: item.name,
-            subtitle: item.role,
-            imageUrl: item.preview || null,
-            imagePublicId: item.imageFileName || null,
-            meta: {
-              company: item.company,
-              specialization: item.specialization,
-              batch: item.batch,
-            },
-          };
-
-          if (item.file) {
-            const media = await uploadImage(item.file);
-            payloadItem.imageUrl = media.url;
-            payloadItem.imagePublicId = media.publicId;
-          }
-
-          return payloadItem;
-        })
-      );
-
-      const savedItems = await saveSection("placements", payloadItems);
-      setItems(
-        savedItems.map((item: any) => ({
-          id: item.id,
-          name: item.title ?? "",
-          role: item.subtitle ?? "",
-          company: item.meta?.company ?? "",
-          specialization: item.meta?.specialization ?? "",
-          batch: item.meta?.batch ?? "",
-          preview: item.imageUrl ?? "",
-          imageFileName: item.imagePublicId,
-        }))
-      );
-
-      toast.success("Placements saved!");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save placements.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   useEffect(() => {
     getSection("placements")
       .then((data) => {
         setItems(
-          data.map((item: any) => ({
+          data.map((item) => ({
             id: item.id,
             name: item.title ?? "",
             role: item.subtitle ?? "",
@@ -102,7 +61,7 @@ export function PlacementsSection() {
 
   const openNew = () => {
     setEditing({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: "",
       role: "",
       company: "",
@@ -118,36 +77,97 @@ export function PlacementsSection() {
     setIsNew(false);
   };
 
-  const saveItem = () => {
+  const saveItem = async () => {
     if (!editing) return;
     if (!editing.name.trim() || !editing.role.trim() || !editing.company.trim()) {
       toast.error("Name, role, and company are required.");
       return;
     }
 
-    if (isNew) {
-      const nextItems = [...items, editing];
-      setItems(nextItems);
-      void persistPlacements(nextItems);
-      toast.success("Placement item added!");
-    } else {
-      const nextItems = items.map((item) => (item.id === editing.id ? editing : item));
-      setItems(nextItems);
-      void persistPlacements(nextItems);
-      toast.success("Placement item updated!");
+    setSaving(true);
+    try {
+      let imageUrl = editing.preview;
+      let imagePublicId = editing.imageFileName;
+
+      if (editing.file) {
+        const media = await uploadImage(editing.file);
+        imageUrl = media.url;
+        imagePublicId = media.publicId;
+      }
+
+      const payload = {
+        id: editing.id,
+        title: editing.name.trim(),
+        subtitle: editing.role.trim(),
+        imageUrl: imageUrl || null,
+        imagePublicId: imagePublicId || null,
+        meta: {
+          company: editing.company.trim(),
+          specialization: editing.specialization.trim(),
+          batch: editing.batch.trim(),
+        },
+      };
+
+      if (isNew) {
+        const created = await createItem("placements", payload);
+        setItems((prev) => [
+          ...prev,
+          {
+            id: created.id,
+            name: created.title || "",
+            role: created.subtitle || "",
+            company: created.meta?.company || "",
+            specialization: created.meta?.specialization || "",
+            batch: created.meta?.batch || "",
+            preview: created.imageUrl || null,
+            imageFileName: created.imagePublicId || undefined,
+          },
+        ]);
+        toast.success("Placement item added!");
+      } else {
+        const updated = await updateItem("placements", editing.id, payload);
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === editing.id
+              ? {
+                  id: updated.id,
+                  name: updated.title || "",
+                  role: updated.subtitle || "",
+                  company: updated.meta?.company || "",
+                  specialization: updated.meta?.specialization || "",
+                  batch: updated.meta?.batch || "",
+                  preview: updated.imageUrl || null,
+                  imageFileName: updated.imagePublicId || undefined,
+                }
+              : item
+          )
+        );
+        toast.success("Placement item updated!");
+      }
+      setEditing(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save placement.");
+    } finally {
+      setSaving(false);
     }
-    setEditing(null);
   };
 
-  const removeItem = (id: string) => {
-    const nextItems = items.filter((item) => item.id !== id);
-    setItems(nextItems);
-    void persistPlacements(nextItems);
-    toast.success("Placement item removed");
+  const removeItem = async (id: string) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await deleteItem("placements", id);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      toast.success("Placement item removed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete placement.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const savePlacements = async () => {
-    await persistPlacements(items);
+  const savePlacements = () => {
+    toast.success("All placements are up to date!");
   };
 
   return (
@@ -180,6 +200,7 @@ export function PlacementsSection() {
                 value={editing.name}
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                 placeholder="Student or alumnus name"
+                disabled={saving}
               />
             </div>
             <div className="space-y-2">
@@ -188,6 +209,7 @@ export function PlacementsSection() {
                 value={editing.role}
                 onChange={(e) => setEditing({ ...editing, role: e.target.value })}
                 placeholder="Marketing Executive"
+                disabled={saving}
               />
             </div>
             <div className="space-y-2">
@@ -196,6 +218,7 @@ export function PlacementsSection() {
                 value={editing.company}
                 onChange={(e) => setEditing({ ...editing, company: e.target.value })}
                 placeholder="JW Marriott"
+                disabled={saving}
               />
             </div>
             <div className="space-y-2">
@@ -204,6 +227,7 @@ export function PlacementsSection() {
                 value={editing.specialization}
                 onChange={(e) => setEditing({ ...editing, specialization: e.target.value })}
                 placeholder="MBA (Operations)"
+                disabled={saving}
               />
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -212,21 +236,32 @@ export function PlacementsSection() {
                 value={editing.batch}
                 onChange={(e) => setEditing({ ...editing, batch: e.target.value })}
                 placeholder="2023-25"
+                disabled={saving}
               />
             </div>
             <div className="md:col-span-2">
               <ImageUpload
                 value={editing.preview || null}
                 onChange={(preview, file) => setEditing({ ...editing, preview, file })}
+                disabled={saving}
               />
             </div>
           </div>
 
           <div className="mt-4 flex gap-2">
-            <Button onClick={saveItem} className="gap-1.5">
-              <Pencil className="h-4 w-4" /> Save Item
+            <Button onClick={saveItem} disabled={saving} className="gap-1.5">
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Pencil className="h-4 w-4" /> Save Item
+                </>
+              )}
             </Button>
-            <Button variant="outline" onClick={() => setEditing(null)}>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>
               Cancel
             </Button>
           </div>
@@ -240,31 +275,33 @@ export function PlacementsSection() {
               {item.preview ? (
                 <img src={item.preview} alt={item.name} className="w-full h-52 object-cover" />
               ) : (
-                <div className="w-full h-52 bg-slate-100 flex items-center justify-center text-slate-500">
+                <div className="w-full h-52 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
                   No image
                 </div>
               )}
               <div className="p-5 space-y-3">
                 <h3 className="text-lg font-semibold text-foreground">{item.name}</h3>
-                <p className="text-sm text-slate-600">
-                  <span className="font-medium">{item.role}</span>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{item.role}</span>
                   {item.company && ", "}
-                  <span className="text-slate-700">{item.company}</span>
+                  <span className="text-slate-700 dark:text-slate-300">{item.company}</span>
                 </p>
-                <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600 space-y-1">
+                <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 text-sm text-slate-600 dark:text-slate-300 space-y-1">
                   <p>{item.specialization ? `Specialization: ${item.specialization}` : "Specialization: -"}</p>
                   <p>{item.batch ? item.batch : "Batch: -"}</p>
                 </div>
                 <div className="flex items-center gap-2 pt-2">
                   <button
                     onClick={() => openEdit(item)}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors"
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors disabled:opacity-50 text-sm"
                   >
                     <Pencil className="h-4 w-4" /> Edit
                   </button>
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-300 text-slate-900 hover:bg-slate-100 transition-colors"
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors disabled:opacity-50 text-sm"
                   >
                     <Trash2 className="h-4 w-4" /> Delete
                   </button>
@@ -286,25 +323,27 @@ export function PlacementsSection() {
         {items.length === 0 ? (
           <p className="text-sm text-slate-500">No placement records available yet. Add a placement to preview it.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-4 bg-slate-50 rounded-xl justify-items-center">
             {items.map((item) => (
-              <div key={item.id} className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div key={item.id} className="w-[232px] overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)] p-3 text-left">
                 {item.preview ? (
-                  <img src={item.preview} alt={item.name} className="w-full h-48 object-cover" />
+                  <img src={item.preview} alt={item.name} className="w-full h-[180px] object-cover rounded-xl mb-3" />
                 ) : (
-                  <div className="w-full h-48 bg-slate-100 flex items-center justify-center text-slate-500">
-                    No preview image
+                  <div className="w-full h-[180px] bg-slate-100 flex items-center justify-center text-slate-400 text-sm rounded-xl mb-3">
+                    No image
                   </div>
                 )}
-                <div className="p-4 space-y-2">
-                  <h3 className="text-xl font-semibold text-slate-900">{item.name}</h3>
-                  <p className="text-sm text-slate-500">{item.role}</p>
-                  <p className="text-sm text-slate-600">{item.company}</p>
-                  <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600">
-                    <p>{item.specialization ? `Specialization: ${item.specialization}` : "Specialization: not set"}</p>
-                    <p>{item.batch ? `Batch: ${item.batch}` : "Batch not set"}</p>
-                  </div>
+                <div className="text-[12px] text-slate-500 font-medium tracking-wide mb-1 uppercase">{item.name}</div>
+                <hr className="border-t border-slate-100 my-2" />
+                <div className="text-sm font-semibold text-slate-900 leading-snug">
+                  {item.role}{item.company ? ", " : ""}
+                  {item.company && <span className="font-extrabold text-slate-950">{item.company}</span>}
                 </div>
+                {(item.specialization || item.batch) && (
+                  <div className="text-xs text-slate-600 mt-2 font-normal">
+                    Specialization: <strong className="font-semibold text-slate-800">{[item.specialization, item.batch].filter(Boolean).join(" ")}</strong>
+                  </div>
+                )}
               </div>
             ))}
           </div>
